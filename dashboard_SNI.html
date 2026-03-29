@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard SNI — Analyse Financière & Risque de Crédit</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --p: #006633; --pd: #004d26; --pl: #e8f5ee;
+      --s: #D4A017; --sl: #fef8e7;
+      --bg: #f0f4f1; --card: #ffffff;
+      --t: #1a2e22; --tl: #5a7a65;
+      --bd: #d0e4d8; --sh: 0 2px 16px rgba(0,102,51,0.09);
+      --r: #c0392b; --rl: #fdecea;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--t)}
+
+    /* HEADER */
+    header{background:linear-gradient(135deg,#006633,#003d1e);box-shadow:0 4px 20px rgba(0,0,0,.22)}
+    .h-inner{max-width:1440px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;padding:22px 36px}
+    .h-left{display:flex;align-items:center;gap:18px}
+    .emblem{width:58px;height:58px;background:var(--s);border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:900;font-size:1.2rem;color:#003d1e;box-shadow:0 2px 10px rgba(0,0,0,.25);line-height:1}
+    .emblem small{font-size:.44rem;font-weight:700;letter-spacing:1px;margin-top:2px}
+    .h-text h1{color:#fff;font-size:1.45rem;font-weight:800}
+    .h-text p{color:rgba(255,255,255,.76);font-size:.82rem;margin-top:3px}
+    .h-right{display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+    .badge{background:var(--s);color:#1a1200;padding:5px 16px;border-radius:20px;font-weight:700;font-size:.78rem}
+    .h-meta{color:rgba(255,255,255,.58);font-size:.72rem;text-align:right}
+    .strip{background:rgba(0,0,0,.18);padding:7px 36px;display:flex;gap:28px;max-width:1440px;margin:0 auto}
+    .si{color:rgba(255,255,255,.7);font-size:.72rem}.si strong{color:var(--s)}
+
+    /* MAIN */
+    main{max-width:1440px;margin:0 auto;padding:28px 32px 48px}
+
+    /* SECTION LABEL */
+    .sec{display:flex;align-items:center;gap:10px;font-size:.74rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--tl);border-bottom:2px solid var(--bd);padding-bottom:8px;margin-bottom:18px}
+    .sec::before{content:'';display:block;width:4px;height:16px;border-radius:2px;background:var(--p)}
+
+    /* KPI */
+    .kpi-row{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-bottom:28px}
+    .kpi{background:var(--card);border-radius:12px;padding:18px 16px 14px;box-shadow:var(--sh);border-top:3px solid var(--p);transition:transform .18s}
+    .kpi:hover{transform:translateY(-3px)}
+    .kpi.g{border-top-color:var(--s)}
+    .kpi.r{border-top-color:var(--r)}
+    .ki{font-size:1.35rem;margin-bottom:7px}
+    .kl{font-size:.65rem;text-transform:uppercase;letter-spacing:.8px;color:var(--tl);font-weight:600}
+    .kv{font-size:1.72rem;font-weight:800;color:var(--p);line-height:1.1;margin:4px 0 2px}
+    .kpi.g .kv{color:#7a5500}.kpi.r .kv{color:var(--r)}
+    .ks{font-size:.67rem;color:var(--tl)}
+
+    /* TABS */
+    .tabs{display:flex;gap:4px;margin-bottom:20px}
+    .tb{padding:8px 18px;border-radius:8px 8px 0 0;border:2px solid var(--bd);border-bottom:none;background:#fff;color:var(--tl);font-size:.78rem;font-weight:600;cursor:pointer;transition:all .15s}
+    .tb.on{background:var(--p);color:#fff;border-color:var(--p)}
+    .tp{display:none}.tp.on{display:block}
+
+    /* GRIDS */
+    .g2{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:20px}
+    .g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;margin-bottom:20px}
+    .sp2{grid-column:span 2}
+    .cc{background:var(--card);border-radius:14px;padding:20px 18px 16px;box-shadow:var(--sh)}
+    .ct{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--tl);margin-bottom:14px}
+    .h220{height:220px}.h260{height:260px}.h310{height:310px}
+
+    /* TABLE */
+    .tc{background:var(--card);border-radius:14px;box-shadow:var(--sh);overflow:hidden;margin-bottom:20px}
+    .ttb{padding:13px 18px;display:flex;align-items:center;justify-content:space-between;background:var(--pl);border-bottom:1px solid var(--bd)}
+    .ts{border:1.5px solid var(--bd);border-radius:8px;padding:6px 12px;font-size:.78rem;outline:none;width:210px}
+    .ts:focus{border-color:var(--p)}
+    .tm{font-size:.71rem;color:var(--tl)}
+    .tw{overflow-x:auto}
+    table{width:100%;border-collapse:collapse;font-size:.76rem}
+    thead th{background:var(--p);color:#fff;padding:10px 12px;text-align:left;font-size:.67rem;font-weight:700;letter-spacing:.4px;white-space:nowrap}
+    tbody tr:nth-child(even){background:#f7fbf8}
+    tbody tr:hover{background:var(--pl)}
+    tbody td{padding:8px 12px;border-bottom:1px solid var(--bd);white-space:nowrap}
+    .sn{white-space:normal;max-width:210px;font-weight:600;font-size:.72rem;color:var(--pd)}
+    .chip{display:inline-block;padding:2px 9px;border-radius:20px;font-size:.66rem;font-weight:700}
+    .cg{background:#d4f5e2;color:#1a6e3a}.cy{background:#fef3cc;color:#7a5900}.cr{background:#fde8e8;color:#9a1c1c}
+    .pg{padding:10px 18px;display:flex;gap:5px;justify-content:center;border-top:1px solid var(--bd)}
+    .pb{padding:4px 10px;border-radius:6px;border:1.5px solid var(--bd);background:#fff;font-size:.73rem;cursor:pointer;color:var(--t);transition:all .14s}
+    .pb:hover,.pb.on{background:var(--p);color:#fff;border-color:var(--p)}
+
+    footer{background:var(--pd);color:rgba(255,255,255,.62);text-align:center;padding:14px;font-size:.71rem}
+    footer strong{color:var(--s)}
+
+    @media(max-width:1024px){.kpi-row{grid-template-columns:repeat(3,1fr)}.g3{grid-template-columns:1fr 1fr}}
+    @media(max-width:768px){.kpi-row{grid-template-columns:1fr 1fr}.g2,.g3{grid-template-columns:1fr}.sp2{grid-column:span 1}main{padding:16px 12px 32px}.h-inner{flex-direction:column;gap:12px}}
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="h-inner">
+    <div class="h-left">
+      <div class="emblem">ENCG<small>SETTAT</small></div>
+      <div class="h-text">
+        <h1>Dashboard — Base de Données SNI</h1>
+        <p>ENCG Settat · Université Hassan 1<sup>er</sup> · Analyse Financière &amp; Risque de Crédit</p>
+      </div>
+    </div>
+    <div class="h-right">
+      <div class="badge">📊 Données 2015 – 2019</div>
+      <div class="h-meta">482 entreprises · 1 521 observations · 40 variables<br>Généré le 28 mars 2026</div>
+    </div>
+  </div>
+  <div class="strip">
+    <div class="si">Source : <strong>Base Keep</strong></div>
+    <div class="si">Période : <strong>2015 – 2019</strong></div>
+    <div class="si">Secteurs : <strong>17</strong></div>
+    <div class="si">Taux de défaut : <strong>3,48 %</strong></div>
+    <div class="si">Forme dominante : <strong>SA (71,5 %)</strong></div>
+    <div class="si">En groupe : <strong>62,1 %</strong></div>
+  </div>
+</header>
+
+<main>
+
+  <div class="sec">Indicateurs clés du portefeuille</div>
+  <div class="kpi-row">
+    <div class="kpi"><div class="ki">🏢</div><div class="kl">Entreprises</div><div class="kv">482</div><div class="ks">1 521 observations</div></div>
+    <div class="kpi g"><div class="ki">📈</div><div class="kl">CA médian (M MAD)</div><div class="kv">369</div><div class="ks">Médiane 2015–2019</div></div>
+    <div class="kpi"><div class="ki">💰</div><div class="kl">Résultat Net méd.</div><div class="kv">7,2 M</div><div class="ks">MAD · médiane globale</div></div>
+    <div class="kpi g"><div class="ki">⚙️</div><div class="kl">EBE médian (M MAD)</div><div class="kv">23,5</div><div class="ks">Médiane 2015–2019</div></div>
+    <div class="kpi r"><div class="ki">⚠️</div><div class="kl">Taux de défaut</div><div class="kv">3,48 %</div><div class="ks">53 défauts / 1 521</div></div>
+    <div class="kpi"><div class="ki">🏦</div><div class="kl">Total Bilan méd.</div><div class="kv">369 M</div><div class="ks">MAD · médiane globale</div></div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tb on" onclick="sw('financier',this)">📈 Évolution Financière</button>
+    <button class="tb" onclick="sw('portefeuille',this)">🏢 Portefeuille & Secteurs</button>
+    <button class="tb" onclick="sw('risque',this)">⚠️ Risque de Crédit</button>
+    <button class="tb" onclick="sw('tableau',this)">📋 Données Détaillées</button>
+  </div>
+
+  <!-- TAB 1 -->
+  <div id="t-financier" class="tp on">
+    <div class="g2">
+      <div class="cc sp2">
+        <div class="ct">📊 Évolution du CA et de l'EBE médians par année (M MAD)</div>
+        <canvas id="c1" class="h260"></canvas>
+      </div>
+    </div>
+    <div class="g3">
+      <div class="cc"><div class="ct">💰 Résultat Net médian (M MAD)</div><canvas id="c2" class="h220"></canvas></div>
+      <div class="cc"><div class="ct">🏦 Capitaux Propres médians (M MAD)</div><canvas id="c3" class="h220"></canvas></div>
+      <div class="cc"><div class="ct">📉 Trésorerie Nette médiane (M MAD)</div><canvas id="c4" class="h220"></canvas></div>
+    </div>
+    <div class="g2">
+      <div class="cc"><div class="ct">⏱️ Délais de règlement médians (jours)</div><canvas id="c5" class="h220"></canvas></div>
+      <div class="cc"><div class="ct">📦 Stock médian &amp; Auto-financement (M MAD)</div><canvas id="c6" class="h220"></canvas></div>
+    </div>
+  </div>
+
+  <!-- TAB 2 -->
+  <div id="t-portefeuille" class="tp">
+    <div class="g2">
+      <div class="cc"><div class="ct">🏢 Nombre d'entreprises par secteur — Top 10</div><canvas id="c7" class="h310"></canvas></div>
+      <div class="cc"><div class="ct">💵 CA médian par secteur — Top 10 (M MAD)</div><canvas id="c8" class="h310"></canvas></div>
+    </div>
+    <div class="g3">
+      <div class="cc"><div class="ct">⚖️ Répartition par forme juridique</div><canvas id="c9" class="h220"></canvas></div>
+      <div class="cc"><div class="ct">📊 Cotation en bourse &amp; Appartenance groupe</div><canvas id="c10" class="h220"></canvas></div>
+      <div class="cc"><div class="ct">💡 Marge nette médiane (%) par année</div><canvas id="c11" class="h220"></canvas></div>
+    </div>
+  </div>
+
+  <!-- TAB 3 -->
+  <div id="t-risque" class="tp">
+    <div class="g2">
+      <div class="cc sp2"><div class="ct">⚠️ Taux de défaut par secteur (%)</div><canvas id="c12" class="h310"></canvas></div>
+    </div>
+    <div class="g3">
+      <div class="cc"><div class="ct">🔴 Sains vs Défaillants</div><canvas id="c13" class="h220"></canvas></div>
+      <div class="cc"><div class="ct">📐 Ratio Dette / Capitaux Propres médian</div><canvas id="c14" class="h220"></canvas></div>
+      <div class="cc"><div class="ct">📏 BFR vs Fonds de Roulement médians (M MAD)</div><canvas id="c15" class="h220"></canvas></div>
+    </div>
+  </div>
+
+  <!-- TAB 4 -->
+  <div id="t-tableau" class="tp">
+    <div class="sec">Synthèse par secteur — Top 10 par volume d'observations</div>
+    <div class="tc">
+      <div class="ttb">
+        <input class="ts" id="ts" placeholder="🔍 Filtrer par secteur…" oninput="flt()">
+        <div class="tm" id="tm"></div>
+      </div>
+      <div class="tw">
+        <table>
+          <thead><tr>
+            <th>Secteur</th><th>Entrep.</th><th>Obs.</th>
+            <th>CA méd. (M)</th><th>RN méd. (M)</th><th>EBE méd. (M)</th><th>CP méd. (M)</th>
+            <th>Délai Cli. (j)</th><th>Délai Fou. (j)</th><th>Taux Défaut</th>
+          </tr></thead>
+          <tbody id="tb"></tbody>
+        </table>
+      </div>
+      <div class="pg" id="pg"></div>
+    </div>
+  </div>
+
+</main>
+
+<footer>
+  Dashboard généré depuis <strong>Base_de_donnes_-_SNI.xlsx</strong> ·
+  <strong>ENCG Settat</strong> — Université Hassan 1<sup>er</sup> ·
+  1 521 observations · 482 entreprises · 2015–2019 · 40 variables
+</footer>
+
+<script>
+/* DATA */
+const YR=[2015,2016,2017,2018,2019];
+const CA=[357.83,382.32,341.08,369,384.72];
+const EBE=[19.78,27.12,23.9,22.67,24.16];
+const RN=[5.73,7.3,8.68,7.53,7.67];
+const CP=[89.4,101.48,98.44,98.94,94.94];
+const TRES=[-32.2,-33.74,-37.34,-33.25,-46.74];
+const FDR=[99.39,111.11,112.16,111.22,104.66];
+const BFR=[156.88,167.67,177.19,179.61,164.19];
+const DCL=[100,104.6,101.9,110.5,113.3];
+const DFO=[132,130.8,138.2,135.5,132.7];
+const AUTOFI=[7.18,10.59,11.36,8.58,8.7];
+const STOCK=[58.14,66.43,59.24,67.21,77.2];
+const MARGE=[1.68,1.98,2.0,1.61,1.54];
+const RDCP=[0.082,0.072,0.065,0.08,0.09];
+
+const SL=['Commerce & Auto','Agro-alim.','BTP','Autres','Métallurgie','Chimie/Parachimie','Transport','Prom. Immo.','Ind. Manuf.','Élec./Gaz/Eau'];
+const SE=[149,58,50,43,37,26,21,21,17,16];
+const SCA=[390.7,417.3,306.9,219.4,573.7,352.1,319.1,385,413.6,688.3];
+const SD=[1.6,1.6,5.8,6.9,6.8,2.6,0,12.5,2.1,4.3];
+
+const ROWS=[
+  {s:"Commerce & Auto",ne:149,no:497,ca:390.7,rn:6.7,ebe:16.3,cp:69.5,dc:90,df:93,td:1.6},
+  {s:"Agro-alimentaire",ne:58,no:190,ca:417.3,rn:5.2,ebe:25.4,cp:109.3,dc:76,df:112,td:1.6},
+  {s:"BTP",ne:50,no:172,ca:306.9,rn:4.1,ebe:14.8,cp:64.3,dc:251,df:187,td:5.8},
+  {s:"Autres sections",ne:43,no:130,ca:219.4,rn:4.7,ebe:12.3,cp:37.9,dc:85,df:131,td:6.9},
+  {s:"Métallurgie/IMEE",ne:37,no:118,ca:573.7,rn:10.9,ebe:39.3,cp:143.5,dc:149,df:150,td:6.8},
+  {s:"Chimie/Parachimie",ne:26,no:78,ca:352.1,rn:22.5,ebe:40.9,cp:164.3,dc:120,df:143,td:2.6},
+  {s:"Transport/Com.",ne:21,no:60,ca:319.1,rn:16,ebe:40.3,cp:104.3,dc:93,df:254,td:0},
+  {s:"Prom. Immobilière",ne:21,no:56,ca:385,rn:9,ebe:35.5,cp:541.8,dc:234,df:605,td:12.5},
+  {s:"Ind. Manufacturières",ne:17,no:48,ca:413.6,rn:4.3,ebe:26.1,cp:162.2,dc:94,df:117,td:2.1},
+  {s:"Élec./Gaz/Eau",ne:16,no:46,ca:688.3,rn:25.1,ebe:73.1,cp:94.9,dc:81,df:108,td:4.3},
+];
+
+/* COLOR */
+const G='#006633',GL='rgba(0,102,51,0.12)',G2='rgba(0,102,51,0.55)';
+const S='#D4A017',SL2='rgba(212,160,23,0.15)',S2='rgba(212,160,23,0.8)';
+const R='#c0392b',RL='rgba(192,57,43,0.14)';
+const PAL=['#006633','#D4A017','#2d8a5e','#e8a000','#1a5e3a','#c07a00','#3cb371','#e07b00','#4da374','#a06000'];
+
+Chart.defaults.font.family="'Segoe UI',system-ui,sans-serif";
+Chart.defaults.font.size=11;
+
+function mkLine(id,ds,opts={}){
+  new Chart(document.getElementById(id),{
+    type:'line',data:{labels:YR,datasets:ds},
+    options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},...opts}
+  });
+}
+function mkBar(id,ds,opts={}){
+  new Chart(document.getElementById(id),{
+    type:'bar',data:{labels:YR,datasets:ds},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{y:{grid:{color:'#e8f0ea'}},x:{grid:{display:false}}},...opts}
+  });
+}
+
+/* TAB 1 */
+mkLine('c1',[
+  {label:'CA médian (M MAD)',data:CA,borderColor:G,backgroundColor:GL,fill:true,tension:.35,pointBackgroundColor:G,pointRadius:5,borderWidth:2.5,yAxisID:'y'},
+  {label:'EBE médian (M MAD)',data:EBE,borderColor:S,backgroundColor:SL2,fill:true,tension:.35,pointBackgroundColor:S,pointRadius:5,borderWidth:2.5,yAxisID:'y1'}
+],{plugins:{legend:{position:'top'}},
+  scales:{y:{position:'left',title:{display:true,text:'CA (M MAD)',color:G},grid:{color:'#e8f0ea'}},
+          y1:{position:'right',title:{display:true,text:'EBE (M MAD)',color:S},grid:{drawOnChartArea:false}}}});
+
+mkBar('c2',[{label:'RN',data:RN,backgroundColor:PAL,borderRadius:6}]);
+mkBar('c3',[{label:'CP',data:CP,backgroundColor:G,borderRadius:6}]);
+mkBar('c4',[{label:'Trésorerie',data:TRES,backgroundColor:TRES.map(v=>v<0?R:G),borderRadius:5}],
+  {scales:{y:{grid:{color:'#e8f0ea'},title:{display:true,text:'M MAD'}},x:{grid:{display:false}}}});
+
+mkLine('c5',[
+  {label:'Clients (j)',data:DCL,borderColor:G,backgroundColor:GL,fill:true,tension:.35,pointRadius:4,borderWidth:2.5},
+  {label:'Fournisseurs (j)',data:DFO,borderColor:S,backgroundColor:SL2,fill:true,tension:.35,pointRadius:4,borderWidth:2.5}
+],{plugins:{legend:{position:'bottom'}},scales:{y:{title:{display:true,text:'Jours'},grid:{color:'#e8f0ea'}},x:{grid:{display:false}}}});
+
+new Chart(document.getElementById('c6'),{
+  type:'bar',
+  data:{labels:YR,datasets:[
+    {label:'Stock (M)',data:STOCK,backgroundColor:G,borderRadius:5,yAxisID:'y'},
+    {label:'Autofi. (M)',type:'line',data:AUTOFI,borderColor:S,backgroundColor:SL2,fill:false,tension:.35,pointRadius:4,borderWidth:2.5,yAxisID:'y1'}
+  ]},
+  options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+    plugins:{legend:{position:'bottom'}},
+    scales:{y:{title:{display:true,text:'Stock (M)'},grid:{color:'#e8f0ea'}},y1:{position:'right',title:{display:true,text:'Autofi. (M)'},grid:{drawOnChartArea:false}}}}
+});
+
+/* TAB 2 */
+new Chart(document.getElementById('c7'),{type:'bar',
+  data:{labels:SL,datasets:[{label:'Entreprises',data:SE,backgroundColor:PAL,borderRadius:5}]},
+  options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',
+    plugins:{legend:{display:false}},scales:{x:{grid:{color:'#e8f0ea'}},y:{grid:{display:false},ticks:{font:{size:10}}}}}
+});
+new Chart(document.getElementById('c8'),{type:'bar',
+  data:{labels:SL,datasets:[{label:'CA méd.',data:SCA,backgroundColor:S,borderRadius:5}]},
+  options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',
+    plugins:{legend:{display:false}},scales:{x:{grid:{color:'#e8f0ea'}},y:{grid:{display:false},ticks:{font:{size:10}}}}}
+});
+new Chart(document.getElementById('c9'),{type:'doughnut',
+  data:{labels:['SA','SARL','Autres'],datasets:[{data:[1088,429,4],backgroundColor:[G,S,'#aab'],borderWidth:3,borderColor:'#fff'}]},
+  options:{responsive:true,maintainAspectRatio:false,cutout:'62%',
+    plugins:{legend:{position:'bottom'},tooltip:{callbacks:{label:c=>` ${c.label}: ${c.parsed} (${((c.parsed/1521)*100).toFixed(1)}%)`}}}}
+});
+new Chart(document.getElementById('c10'),{type:'bar',
+  data:{labels:['Cotées','Non cotées','En groupe','Indépendantes'],
+    datasets:[{data:[58,1463,945,576],backgroundColor:[S,G2,G,S2],borderRadius:6}]},
+  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+    scales:{y:{grid:{color:'#e8f0ea'}},x:{grid:{display:false},ticks:{font:{size:9}}}}}
+});
+mkLine('c11',[{label:'Marge nette (%)',data:MARGE,borderColor:G,backgroundColor:GL,fill:true,tension:.4,pointRadius:5,borderWidth:2.5}],
+  {plugins:{legend:{display:false}},scales:{y:{title:{display:true,text:'%'},grid:{color:'#e8f0ea'}},x:{grid:{display:false}}}});
+
+/* TAB 3 */
+new Chart(document.getElementById('c12'),{type:'bar',
+  data:{labels:SL,datasets:[{label:'Taux défaut (%)',data:SD,backgroundColor:SD.map(v=>v>10?R:v>5?'#e67e22':v>0?S:G),borderRadius:5}]},
+  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>` ${c.parsed.y.toFixed(1)} %`}}},
+    scales:{y:{title:{display:true,text:'%'},grid:{color:'#e8f0ea'}},x:{grid:{display:false},ticks:{font:{size:10},maxRotation:25}}}}
+});
+new Chart(document.getElementById('c13'),{type:'doughnut',
+  data:{labels:['Sains (96,5 %)','Défaillants (3,5 %)'],datasets:[{data:[1468,53],backgroundColor:[G,R],borderWidth:3,borderColor:'#fff'}]},
+  options:{responsive:true,maintainAspectRatio:false,cutout:'62%',plugins:{legend:{position:'bottom'}}}
+});
+mkBar('c14',[{label:'Dette/CP',data:RDCP,backgroundColor:PAL,borderRadius:5}],
+  {plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>` ${c.parsed.y.toFixed(3)}`}}},
+   scales:{y:{title:{display:true,text:'Ratio'},grid:{color:'#e8f0ea'}},x:{grid:{display:false}}}});
+mkLine('c15',[
+  {label:'BFR (M)',data:BFR,borderColor:R,backgroundColor:RL,fill:true,tension:.35,pointRadius:4,borderWidth:2.5},
+  {label:'FDR (M)',data:FDR,borderColor:G,backgroundColor:GL,fill:false,tension:.35,pointRadius:4,borderWidth:2.5}
+],{plugins:{legend:{position:'bottom'}},scales:{y:{title:{display:true,text:'M MAD'},grid:{color:'#e8f0ea'}},x:{grid:{display:false}}}});
+
+/* TABLE */
+let pg=1,flt2=[...ROWS];const PER=5;
+function chip(v){if(v===0)return`<span class="chip cg">0 %</span>`;if(v>9)return`<span class="chip cr">${v} %</span>`;return`<span class="chip cy">${v} %</span>`;}
+function rTbl(){
+  const st=(pg-1)*PER,rows=flt2.slice(st,st+PER);
+  document.getElementById('tb').innerHTML=rows.map(r=>`<tr>
+    <td class="sn">${r.s}</td><td style="text-align:center">${r.ne}</td><td style="text-align:center">${r.no}</td>
+    <td style="text-align:right">${r.ca}</td><td style="text-align:right">${r.rn}</td><td style="text-align:right">${r.ebe}</td><td style="text-align:right">${r.cp}</td>
+    <td style="text-align:center">${r.dc}</td><td style="text-align:center">${r.df}</td><td style="text-align:center">${chip(r.td)}</td>
+  </tr>`).join('');
+  const tot=Math.ceil(flt2.length/PER);
+  document.getElementById('tm').textContent=`${flt2.length} secteurs · Page ${pg}/${tot}`;
+  const p=document.getElementById('pg');p.innerHTML='';
+  if(pg>1){const b=document.createElement('button');b.className='pb';b.textContent='◀';b.onclick=()=>{pg--;rTbl()};p.appendChild(b);}
+  for(let i=1;i<=tot;i++){const b=document.createElement('button');b.className='pb'+(i===pg?' on':'');b.textContent=i;b.onclick=(p=>()=>{pg=p;rTbl()})(i);p.appendChild(b);}
+  if(pg<tot){const b=document.createElement('button');b.className='pb';b.textContent='▶';b.onclick=()=>{pg++;rTbl()};p.appendChild(b);}
+}
+function flt(){const q=document.getElementById('ts').value.toLowerCase();flt2=ROWS.filter(r=>r.s.toLowerCase().includes(q));pg=1;rTbl();}
+rTbl();
+
+/* TABS */
+function sw(id,el){
+  document.querySelectorAll('.tp').forEach(p=>p.classList.remove('on'));
+  document.querySelectorAll('.tb').forEach(b=>b.classList.remove('on'));
+  document.getElementById('t-'+id).classList.add('on');
+  el.classList.add('on');
+}
+</script>
+</body>
+</html>
